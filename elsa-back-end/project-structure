@@ -1,0 +1,20 @@
+quiz-app/
+├── backend/
+│   ├── server.js
+│   ├── config/
+│   │   └── db.js
+│   ├── models/
+│   │   ├── Quiz.js
+│   │   └── Question.js
+│   ├── routes/
+│   │   └── api.js
+│   └── websocket/
+│       └── quizHandler.js
+├── frontend/
+│   ├── presentation/
+│   │   ├── index.html
+│   │   └── script.js
+│   └── user/
+│       ├── index.html
+│       └── script.js
+└── package.json 

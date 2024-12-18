@@ -1,0 +1,86 @@
+@startuml Quiz flow
+    title "Quiz flow"
+    skinparam backgroundColor #EEEBDC
+    box "Actor"
+    actor User as "User"
+    actor Owner as "Owner" #LightCyan
+    end box
+
+    box "Web Application" #LightGray
+    participant UserPage as "User Page" #LightBlue
+    participant PresentationPage as "Presentation Page" #LightSalmon
+    end box
+
+    Box "Backend" #LightGray
+    participant Backend as "Backend"
+    end box
+
+    box "Database" #LightGray
+    database MongoDB as "MongoDB" #Green
+    database Redis as "Redis" #Red
+    end box
+    autonumber 1.1
+
+    Note across: Phase 1: User Join quiz
+    
+    User -> UserPage: Enter quiz code
+    UserPage -> Backend: Emit event "JOIN_QUIZ"
+    activate Backend
+    alt Quiz not found
+        Backend --> UserPage: Send error message
+    else Quiz found
+        Backend -> Redis: Set user in Redis
+        Backend -> PresentationPage: Emit event "USER_JOINED"
+        activate Backend
+        Backend -> UserPage: Emit event "USER_JOINED"
+        deactivate Backend
+        deactivate Backend
+    end
+
+    Note across: Phase 2: Owner Start quiz
+
+
+    autonumber inc A
+    Owner -> PresentationPage: Start quiz
+    PresentationPage -> Backend: Send API request to start quiz
+    activate Backend
+    Backend -> MongoDB: Get quiz
+
+    loop Until last question
+        Backend -> PresentationPage: Emit event "NEW_QUESTION"
+        activate Backend
+        Backend -> UserPage: Emit event "NEW_QUESTION"
+        deactivate Backend
+        deactivate Backend
+
+        group Answer Phase
+            User -> UserPage: Answer question
+            UserPage -> Backend: Emit event "SUBMIT_ANSWER"
+            activate Backend
+            Backend -> Backend: Validate answer
+            Backend -> Redis: Update user score
+            Backend -> UserPage: Emit event "ANSWER_RESULT"
+            activate Backend
+            Backend -> PresentationPage: Emit event "LEADERBOARD_UPDATE"
+            deactivate Backend
+            deactivate Backend
+        end
+
+        alt Time limit reached 
+            Backend -> MongoDB: Get next question
+            Backend -> Backend: Auto switch to next question
+        end
+    end
+
+    Note across: Phase 3: Quiz ended
+
+    autonumber inc A
+    Backend -> Backend: Quiz ended
+    activate Backend
+
+    Backend -> PresentationPage: Emit event "QUIZ_END" and "LEADERBOARD_UPDATE"
+    activate Backend
+    Backend -> UserPage: Emit event "QUIZ_END"
+    deactivate Backend
+    deactivate Backend
+@enduml
